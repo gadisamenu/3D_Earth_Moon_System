@@ -2,21 +2,24 @@ import numpy as np
 import pywavefront as pw
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from OpenGL.GL.shaders import *
 import sys ,time,os
+import pyrr, glfw
 import transformation as tr
+from OpenGL.GL.shaders import compileProgram, compileShader
+from  texture import load_texture
+
 class Model:
-    def __init__(self,path):
-        self.path = path
+    def __init__(self,file_path:str):
+        self.path = file_path
         self.scene = None     
-        self.scene_scale = None
-        self.scene_translate = None
         self.vao = None
         self.vbo = None
         self.vertices = None
         self.program = None
-        self.ibo = None
-
+        self.texture = None
+        self.model = pyrr.matrix44.create_from_translation(np.array([0,0,0]))
+        
+        
     def load_model(self):
         try:
             self.scene = pw.Wavefront(self.path, collect_faces= True)
@@ -30,43 +33,22 @@ class Model:
     def ready(self,w_width,w_height):
        
         self.load_model()
-        # scene_box = (self.scene.vertices[0], self.scene.vertices[0])
-
-        # for vertex in self.scene.vertices:
-        #     min_v = [min(scene_box[0][i], vertex[i]) for i in range(3)]
-        #     max_v = [max(scene_box[1][i], vertex[i]) for i in range(3)]
-        #     scene_box = (min_v, max_v)
-
-        # scene_size     = [scene_box[1][i]-scene_box[0][i] for i in range(3)]
-        # max_scene_size = max(scene_size)
-        # scaled_size    = 5
-        # self.scene_scale    = [scaled_size/max_scene_size for i in range(3)]
-        # self.scene_translate    = [-(scene_box[1][i]+scene_box[0][i])/2 for i in range(3)]
-
-        
-        '''
-        compile the shaders 
-        '''
-        vertex_shader = compileShader(self.getShaders("Moon.vertex.shader"),GL_VERTEX_SHADER)
-        fragment_shader = compileShader(self.getShaders("Moon.fragment.shader"),GL_FRAGMENT_SHADER)
-
-
+                
         """
         The object mode loads the object and return  a list of vertexs by format of 
         vertex3v, texture2d, normal3v
         """
-        material = self.scene.materials["Moon"]
-        self.vertices = np.array(self.scene.materials["Moon"].vertices,dtype=np.float32)
-       
+        # print(self.scene)
+        for name,  material in self.scene.materials.items():
+            self.vertices = np.array(self.scene.materials[name].vertices,dtype=np.float32)
+            break
+
+
        
         '''
         creating the shaders and attaching with the shaders
         '''
-        self.program = glCreateProgram()
-        glAttachShader(self.program, vertex_shader)
-        glAttachShader(self.program,fragment_shader)
-        glLinkProgram(self.program)
-
+        self.program =  compileProgram(compileShader(self.getShaders("vertex.shader"),GL_VERTEX_SHADER), compileShader(self.getShaders("fragment.shader"),GL_FRAGMENT_SHADER))
 
         '''
         Generating the buffers
@@ -89,28 +71,35 @@ class Model:
 
 
         vertex_location = glGetAttribLocation(self.program, "position")
-        glVertexAttribPointer(vertex_location, 3, GL_FLOAT, GL_FALSE,  8*self.vertices.itemsize, ctypes.c_void_p(5*ctypes.sizeof(ctypes.c_float)))
+        glVertexAttribPointer(vertex_location, 3, GL_FLOAT, GL_FALSE, 8*self.vertices.itemsize, ctypes.c_void_p(5*self.vertices.itemsize))
         glEnableVertexAttribArray(vertex_location)
 
-        glUseProgram(self.program)
-        translation_location = glGetUniformLocation(self.program, "projection")
-        glUniformMatrix4fv(translation_location, 1, GL_FALSE, tr.translationMatrix( 0, -10, 0))
 
-        glPolygonMode(GL_FRONT_AND_BACK,GL_LINE)
-            
+        glUseProgram(self.program)
+        projection_location = glGetUniformLocation(self.program, "projection")
+        view_location = glGetUniformLocation(self.program, "view")
+        model_location = glGetUniformLocation(self.program, 'model')
+
+        glUniformMatrix4fv(projection_location, 1, GL_FALSE, pyrr.matrix44.create_perspective_projection_matrix(45, w_width / w_height, 1, 500,dtype=np.float32))
+        glUniformMatrix4fv(view_location, 1, GL_FALSE, pyrr.matrix44.create_look_at(np.array([0.0,10.0,10.0]),np.array([0.0,0.0,0.0]) , np.array([0.0,1.0,0.0])))
+        glUniformMatrix4fv(model_location, 1, GL_FALSE, self.model)
+
+
+
+    def set_mode(self,model):
+        self.model = model
 
     def draw(self):
-        
         glUseProgram(self.program)
         glBindVertexArray(self.vao)
+        model_location = glGetUniformLocation(self.program, 'model')
+        glUniformMatrix4fv(model_location, 1, GL_FALSE, self.model)
         glDrawArrays(GL_TRIANGLES, 0,len(self.vertices)//8)
+        glBindTexture(GL_TEXTURE_2D, 0)
         glBindVertexArray(0)
         
 
 
-        
-        
-    
    
 
 

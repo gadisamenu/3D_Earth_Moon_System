@@ -2,9 +2,9 @@ import numpy as np
 
 def translationMatrix(x, y, z):
     return np.array([
-        [0.3,0,0,x],
-        [0,0.3,0,y],
-        [0,0,0.3,z],
+        [1,0,0,x],
+        [0,1,0,y],
+        [0,0,1,z],
         [0,0,0,1]
     ],dtype=np.float32)
 
