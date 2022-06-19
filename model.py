@@ -4,7 +4,6 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 import sys ,time,os
 import pyrr, glfw
-import transformation as tr
 from OpenGL.GL.shaders import compileProgram, compileShader
 from  texture import load_texture
 
@@ -18,7 +17,6 @@ class Model:
         self.vertices = None
         self.program = None
         self.texture = None
-        # self.texture2 = None
         self.model = None
         self.view = None
         self.projection =  None
@@ -27,6 +25,7 @@ class Model:
     def load_model(self):
         try:
             self.scene = pw.Wavefront(self.path, collect_faces= True)
+            pw.wavefront
         except:
             print("model loading failed")
 
@@ -69,10 +68,7 @@ class Model:
         glVertexAttribPointer(texture_location, 2, GL_FLOAT, GL_FALSE,  8*self.vertices.itemsize, ctypes.c_void_p(0))
         glEnableVertexAttribArray(texture_location)
 
-        # normal_location = glGetAttribLocation(self.program, "normal")
-        # glVertexAttribPointer(normal_location, 3, GL_FLOAT, GL_FALSE,  8*self.vertices.itemsize, ctypes.c_void_p(2*ctypes.sizeof(ctypes.c_float)))
-        # glEnableVertexAttribArray(normal_location)
-
+       
 
         vertex_location = glGetAttribLocation(self.program, "position")
         glVertexAttribPointer(vertex_location, 3, GL_FLOAT, GL_FALSE, 8*self.vertices.itemsize, ctypes.c_void_p(5*self.vertices.itemsize))

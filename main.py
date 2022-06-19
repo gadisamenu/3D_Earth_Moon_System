@@ -16,6 +16,7 @@ class Render:
         self.models =None
         self.camera = None
         self.width_height = (1280,720)
+        self.firstMouse = True
        
     def __init(self):
         """
@@ -47,7 +48,12 @@ class Render:
         glEnable(GL_DEPTH_TEST)
 
         return window
+        
     def mouse_callback(self, window, xpos, ypos):
+        if self.firstMouse:
+            self.camera.lastX = xpos
+            self.camera.lastY = ypos
+            self.firstMouse = False
         xoffset = xpos - self.camera.lastX
         yoffset = self.camera.lastY - ypos
 
@@ -55,10 +61,16 @@ class Render:
         self.camera.lastY = ypos
 
         self.camera.mouseProcess(xoffset, yoffset)
+
+        
     def scroll_callback(self,window, xoffset, yoffset):
-        self.camera.fov -= self.camera.sensitivity * yoffset
-        if self.camera.fov < 1.0: self.camera.fov = 1.0
-        if self.camera.fov > 45.0: self.camera.fov = 45.0
+  
+        self.camera.fov -= 2*self.camera.sensitivity * yoffset
+       
+
+        if self.camera.fov < np.radians(20.0): self.camera.fov = np.radians(20.0)
+        if self.camera.fov > np.radians(100.0): self.camera.fov =np.radians(100.0)
+
     def keyboard_callback(self, window, key, scancode, action, mode):
         if key == glfw.KEY_ESCAPE and action == glfw.PRESS:
             glfw.set_window_should_close(window, True)
@@ -70,12 +82,16 @@ class Render:
             self.camera.keyboardProcess("LEFT", [1.0,0.0,0.0])
         elif key == glfw.KEY_UP or key == glfw.KEY_D:
             self.camera.keyboardProcess("RIGHT", [1.0,0.0,0.0])
+        elif key == glfw.KEY_Q:
+            self.camera.keyboardProcess("UP",[0.0,1.0,0.0])
+        elif key == glfw.KEY_E:
+            self.camera.keyboardProcess("DOWN",[0.0,1.0,0.0])
 
 
 
     def __draw(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        scale = pyrr.matrix44.create_from_scale(np.array([2.0,2.0,2.0],dtype=np.float32))
+        scale = pyrr.matrix44.create_from_scale(np.array([2.5,2.5,2.5],dtype=np.float32))
         translation = pyrr.matrix44.create_from_translation(np.array([0,0,0],dtype=np.float32))
         temp = pyrr.matrix44.multiply(scale, translation)
         temp2 = pyrr.matrix44.multiply(temp,pyrr.matrix44.create_from_y_rotation(glfw.get_time() * 0.25))
@@ -105,11 +121,8 @@ class Render:
         while not glfw.window_should_close(window):
             glfw.poll_events()
 
-
-            
             self.__draw()
             glfw.swap_buffers(window)
-            # time.sleep(0.5)
 
         glfw.terminate()
 
