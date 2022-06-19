@@ -4,8 +4,9 @@ in vec2 v_texture;
 
 out vec4 out_color;
 
-uniform sampler2D s_texture;
+uniform sampler2D earthTex;
+uniform sampler2D cloudTex;
 
 void main(){
-    out_color = vec4(0.0, 1.0, 0.0, 1.0);
+    out_color = mix(texture(earthTex, v_texture), texture(cloudTex, v_texture), 0.5);
 }
